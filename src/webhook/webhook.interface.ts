@@ -8,7 +8,7 @@ import { getLogger } from '../logging.service';
 import { getClient } from '../workwave/auth.service';
 import { validator } from '../validator';
 import { Joi, Field } from './schema';
-import { WebhookRequest, WebhookRequestBody } from './webhook.request.dto';
+import { WebhookRequest, WebhookRequestBody, WebhookRequestBodySchema } from './webhook.request.dto';
 
 const logger = getLogger(__filename);
 
@@ -47,7 +47,7 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
     };
 
     const handlers: Handler[] = [
-        validator.body(validationSchema),
+        validator.body(WebhookRequestBodySchema),
         ({ body }: ValidatedRequest<WebhookRequest>, res, next) => {
             service(body)
                 .then((results) => res.status(200).json({ results }))
