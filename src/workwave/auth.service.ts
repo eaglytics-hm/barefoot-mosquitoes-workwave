@@ -1,37 +1,53 @@
 import axios from 'axios';
 import { add, isAfter } from 'date-fns';
-import { Timestamp } from '@google-cloud/firestore';
+import { Firestore, Timestamp } from '@google-cloud/firestore';
 
-import { AccessToken, get, set } from './auth.repository';
+import { TenantEnum } from './tenant.enum';
 
-const ensureToken = async () => {
-    const token = await get();
+const firestoreClient = new Firestore();
 
-    if (token && token.expires_at instanceof Timestamp && isAfter(token.expires_at.toDate(), new Date())) {
-        return token.access_token;
-    }
+const collection = firestoreClient.collection('workwave-access-token');
 
-    const accessToken = await axios
-        .request<AccessToken>({
-            method: 'POST',
-            url: 'https://is.workwave.com/oauth2/token',
-            auth: { username: process.env.WORKWAVE_CLIENT_ID!, password: process.env.WORKWAVE_CLIENT_SECRET! },
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            params: { scope: 'openid' },
-            data: {
-                grant_type: 'password',
-                username: process.env.WORKWAVE_USERNAME,
-                password: process.env.WORKWAVE_PASSWORD,
-            },
-        })
-        .then((response) => response.data);
+export const getClient = async (tenant: TenantEnum) => {
+    type AccessToken = {
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+        expires_at: Date | Timestamp;
+    };
 
-    await set({ ...accessToken, expires_at: add(new Date(), { seconds: accessToken.expires_in }) });
+    const ensureToken = async () => {
+        const token = await collection
+            .doc(tenant)
+            .get()
+            .then((doc) => doc.data() as AccessToken | undefined);
 
-    return accessToken.access_token;
-};
+        if (token && token.expires_at instanceof Timestamp && isAfter(token.expires_at.toDate(), new Date())) {
+            return token.access_token;
+        }
 
-export const getClient = async () => {
+        const accessToken = await axios
+            .request<AccessToken>({
+                method: 'POST',
+                url: 'https://is.workwave.com/oauth2/token',
+                auth: { username: process.env.WORKWAVE_CLIENT_ID!, password: process.env.WORKWAVE_CLIENT_SECRET! },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                params: { scope: 'openid' },
+                data: {
+                    grant_type: 'password',
+                    username: process.env.WORKWAVE_USERNAME,
+                    password: process.env.WORKWAVE_PASSWORD,
+                },
+            })
+            .then((response) => response.data);
+
+        await collection
+            .doc(tenant)
+            .set({ ...accessToken, expires_at: add(new Date(), { seconds: accessToken.expires_in }) });
+
+        return accessToken.access_token;
+    };
+
     const accessToken = await ensureToken();
 
     return axios.create({
@@ -39,7 +55,7 @@ export const getClient = async () => {
         headers: {
             Authorization: `Bearer ${accessToken}`,
             apikey: process.env.WORKWAVE_API_KEY,
-            'tenant-id': process.env.WORKWAVE_TENANT_ID,
+            'tenant-id': tenant,
         },
     });
 };
