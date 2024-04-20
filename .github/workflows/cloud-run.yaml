@@ -57,7 +57,6 @@ jobs:
             WORKWAVE_USERNAME=WORKWAVE_USERNAME:latest
             WORKWAVE_PASSWORD=WORKWAVE_PASSWORD:latest
             WORKWAVE_API_KEY=WORKWAVE_API_KEY:latest
-            WORKWAVE_TENANT_ID=WORKWAVE_TENANT_ID:latest
           flags: |
             --service-account ${{ env.GCP_SA }}
             --cpu 1
