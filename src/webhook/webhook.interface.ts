@@ -1,4 +1,4 @@
-import { Express, Handler, NextFunction, Response } from 'express';
+import { NextFunction, Response } from 'express';
 import { ValidatedRequest } from 'express-joi-validation';
 import { AxiosRequestConfig } from 'axios';
 import { Storage } from '@google-cloud/storage';
@@ -35,7 +35,10 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
     const format = 'json';
     const storageConfig = {
         path: (tenant: TenantEnum, id: number) => `tenant_id=${tenant}/${name}/${id}.${format}`,
-        sourceUris: (tenant: TenantEnum) => [`gs://${bucketName}/tenant_id=${tenant}/${name}/*.${format}`],
+        sourceUris: Object.values(TenantEnum).map((tenant) => {
+            return `gs://${bucketName}/tenant_id=${tenant}/${name}/*.${format}`;
+        }),
+        sourceUriPrefix: `gs://${bucketName}/{tenant_id:INT64}`,
     };
 
     const validationSchema = Joi.object<object>(Object.assign({}, ...fields.map((field) => field.validationSchema)));
@@ -52,40 +55,25 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
         return file.name;
     };
 
-    const handlers: Handler[] = [
-        validator.params(WebhookRequestParamSchema),
-        validator.body(WebhookRequestBodySchema),
-        ({ params, body }: ValidatedRequest<WebhookRequest>, res, next) => {
-            service(params.tenant, body)
-                .then((results) => res.status(200).json({ results }))
-                .catch(next);
-        },
-    ];
+    const middlewares = [validator.params(WebhookRequestParamSchema), validator.body(WebhookRequestBodySchema)];
 
-    const routes: { path: string; handlers: any }[] = [
-        { path: `/${name.toLowerCase()}/upsert`, handlers },
-        { path: `/${name.toLowerCase()}/delete`, handlers },
-    ];
-
-    const x = (app: Express) => {
-        app.post(
-            '/:tenant',
-            validator.params(WebhookRequestParamSchema),
-            validator.body(WebhookRequestBodySchema),
-            ({ params, body }: ValidatedRequest<WebhookRequest>, res, next) => {
-                service(params.tenant, body)
-                    .then((results) => res.status(200).json({ results }))
-                    .catch(next);
-            },
-        );
+    const handler = ({ params, body }: ValidatedRequest<WebhookRequest>, res: Response, next: NextFunction) => {
+        service(params.tenant, body)
+            .then((results) => res.status(200).json({ results }))
+            .catch(next);
     };
+
+    const routes = [
+        { path: `/:tenant/${name.toLowerCase()}/upsert`, middlewares, handler },
+        { path: `/:tenant/${name.toLowerCase()}/delete`, middlewares, handler },
+    ];
 
     const bootstrap = async () => {
         if (!(await dataset.exists().then(([result]) => result))) {
             await dataset.create();
         }
 
-        const table = dataset.table(name);
+        const table = dataset.table(`${name}`);
         const tableName = `${table.dataset.id}.${table.id}`;
 
         if (await table.exists().then(([response]) => response)) {
@@ -99,15 +87,14 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
                 sourceUris: storageConfig.sourceUris,
                 sourceFormat: 'NEWLINE_DELIMITED_JSON',
                 ignoreUnknownValues: true,
+                hivePartitioningOptions: {
+                    mode: 'CUSTOM',
+                    sourceUriPrefix: storageConfig.sourceUriPrefix,
+                },
             },
         });
         logger.debug(`Table ${tableName} created`);
     };
 
-    return {
-        path: `/${name.toLowerCase()}`,
-        service,
-        routes,
-        bootstrap,
-    };
+    return { service, routes, bootstrap };
 };
