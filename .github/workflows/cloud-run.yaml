@@ -50,7 +50,7 @@ jobs:
         with:
           service: ${{ env.SERVICE_NAME }}
           image: ${{ env.IMAGE }}
-          timeout: 60s
+          timeout: 30s
           secrets: |
             WORKWAVE_CLIENT_ID=WORKWAVE_CLIENT_ID:latest
             WORKWAVE_CLIENT_SECRET=WORKWAVE_CLIENT_SECRET:latest
@@ -60,7 +60,7 @@ jobs:
           flags: |
             --service-account ${{ env.GCP_SA }}
             --cpu 1
-            --memory 1Gi
+            --memory 256Mi
 
       - run: |-
           gcloud run services update ${{ env.SERVICE_NAME }} \
