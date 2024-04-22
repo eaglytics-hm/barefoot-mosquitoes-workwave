@@ -3,10 +3,10 @@ import { ValidatedRequest } from 'express-joi-validation';
 import { AxiosRequestConfig } from 'axios';
 import { Storage } from '@google-cloud/storage';
 import { BigQuery } from '@google-cloud/bigquery';
-import { DocumentReference, Firestore } from '@google-cloud/firestore';
 
 import { getLogger } from '../logging.service';
 import { getClient } from '../workwave/auth.service';
+import { tokenCollection } from '../workwave/token.repository';
 import { validator } from '../validator';
 import { Joi, Field } from './schema';
 import { WebhookRequest, WebhookRequestBody, WebhookRequestBodySchema } from './webhook.request.dto';
@@ -18,8 +18,6 @@ const bucket = storageClient.bucket('barefoot-mosquitoes-workwave');
 
 const bigqueryClient = new BigQuery();
 const dataset = bigqueryClient.dataset('Workwave');
-
-const firestoreClient = new Firestore();
 
 type CreateWebhookModelConfig = {
     name: string;
@@ -74,8 +72,7 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
             await table.delete();
         }
 
-        const tenantIds = await firestoreClient
-            .collection('workwave-access-token')
+        const tenantIds = await tokenCollection
             .listDocuments()
             .then((docRefs) => docRefs.map((docRef) => <string>docRef.id));
 
