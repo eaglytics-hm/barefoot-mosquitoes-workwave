@@ -3,18 +3,13 @@ import { ValidatedRequest } from 'express-joi-validation';
 import { AxiosRequestConfig } from 'axios';
 import { Storage } from '@google-cloud/storage';
 import { BigQuery } from '@google-cloud/bigquery';
+import { DocumentReference, Firestore } from '@google-cloud/firestore';
 
 import { getLogger } from '../logging.service';
 import { getClient } from '../workwave/auth.service';
 import { validator } from '../validator';
 import { Joi, Field } from './schema';
-import {
-    WebhookRequest,
-    WebhookRequestBody,
-    WebhookRequestBodySchema,
-    WebhookRequestParamSchema,
-} from './webhook.request.dto';
-import { TenantEnum } from '../workwave/tenant.enum';
+import { WebhookRequest, WebhookRequestBody, WebhookRequestBodySchema } from './webhook.request.dto';
 
 const logger = getLogger(__filename);
 
@@ -23,6 +18,8 @@ const bucket = storageClient.bucket('barefoot-mosquitoes-workwave');
 
 const bigqueryClient = new BigQuery();
 const dataset = bigqueryClient.dataset('Workwave');
+
+const firestoreClient = new Firestore();
 
 type CreateWebhookModelConfig = {
     name: string;
@@ -34,38 +31,34 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
     const bucketName = bucket.name;
     const format = 'json';
     const storageConfig = {
-        path: (tenant: TenantEnum, id: number) => `tenant_id=${tenant}/${name}/${id}.${format}`,
-        sourceUris: Object.values(TenantEnum).map((tenant) => {
-            return `gs://${bucketName}/tenant_id=${tenant}/${name}/*.${format}`;
-        }),
+        path: (tenantId: string, entityId: number) => `tenant_id=${tenantId}/${name}/${entityId}.${format}`,
+        sourceUris: (tenantId: string) => `gs://${bucketName}/tenant_id=${tenantId}/${name}/*.${format}`,
         sourceUriPrefix: `gs://${bucketName}/{tenant_id:INT64}`,
     };
 
     const validationSchema = Joi.object<object>(Object.assign({}, ...fields.map((field) => field.validationSchema)));
     const tableSchema = fields.map((field) => field.tableSchema);
 
-    const service = async (tenant: TenantEnum, { EntityId: id, EntityType: type }: WebhookRequestBody) => {
-        const client = await getClient(tenant);
-        const file = bucket.file(storageConfig.path(tenant, id));
+    const service = async ({ TenantId: tenantId, EntityId: entityId, EntityType: entityType }: WebhookRequestBody) => {
+        const client = await getClient(tenantId);
+        const file = bucket.file(storageConfig.path(tenantId, entityId));
         const record = await client
-            .request(resolver(id))
+            .request(resolver(entityId))
             .then((response) => validationSchema.validateAsync(response.data));
         await file.save(JSON.stringify(record), { resumable: false });
-        logger.info(`${type} - ${tenant} - ${id} saved to ${file.name}`);
+        logger.info(`Tenant ID ${tenantId}: ${entityType} ${entityId} saved to ${file.name}`);
         return file.name;
     };
 
-    const middlewares = [validator.params(WebhookRequestParamSchema), validator.body(WebhookRequestBodySchema)];
-
-    const handler = ({ params, body }: ValidatedRequest<WebhookRequest>, res: Response, next: NextFunction) => {
-        service(params.tenant, body)
+    const handler = ({ body }: ValidatedRequest<WebhookRequest>, res: Response, next: NextFunction) => {
+        service(body)
             .then((results) => res.status(200).json({ results }))
             .catch(next);
     };
 
     const routes = [
-        { path: `/:tenant/${name.toLowerCase()}/upsert`, middlewares, handler },
-        { path: `/:tenant/${name.toLowerCase()}/delete`, middlewares, handler },
+        { path: `/${name.toLowerCase()}/upsert`, handlers: [validator.body(WebhookRequestBodySchema), handler] },
+        { path: `/${name.toLowerCase()}/delete`, handlers: [validator.body(WebhookRequestBodySchema), handler] },
     ];
 
     const bootstrap = async () => {
@@ -81,10 +74,15 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
             await table.delete();
         }
 
+        const tenantIds = await firestoreClient
+            .collection('workwave-access-token')
+            .listDocuments()
+            .then((docRefs) => docRefs.map((docRef) => <string>docRef.id));
+
         await table.create({
             schema: tableSchema,
             externalDataConfiguration: {
-                sourceUris: storageConfig.sourceUris,
+                sourceUris: tenantIds.map(storageConfig.sourceUris),
                 sourceFormat: 'NEWLINE_DELIMITED_JSON',
                 ignoreUnknownValues: true,
                 hivePartitioningOptions: {

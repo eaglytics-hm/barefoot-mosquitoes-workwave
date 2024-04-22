@@ -20,7 +20,7 @@ app.use(({ method, path, body }, res, next) => {
     next();
 });
 
-Invoice.routes.forEach(({ path, middlewares, handler }) => app.post(path, ...middlewares, handler));
+Invoice.routes.forEach(({ path, handlers }) => app.post(path, ...handlers));
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
     if (isObject(error) && 'error' in error && Joi.isError(error.error)) {

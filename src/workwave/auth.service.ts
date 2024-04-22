@@ -2,13 +2,11 @@ import axios from 'axios';
 import { add, isAfter } from 'date-fns';
 import { Firestore, Timestamp } from '@google-cloud/firestore';
 
-import { TenantEnum } from './tenant.enum';
-
 const firestoreClient = new Firestore();
 
 const collection = firestoreClient.collection('workwave-access-token');
 
-export const getClient = async (tenant: TenantEnum) => {
+export const getClient = async (tenantId: string) => {
     type AccessToken = {
         access_token: string;
         refresh_token: string;
@@ -18,7 +16,7 @@ export const getClient = async (tenant: TenantEnum) => {
 
     const ensureToken = async () => {
         const token = await collection
-            .doc(tenant)
+            .doc(tenantId)
             .get()
             .then((doc) => doc.data() as AccessToken | undefined);
 
@@ -42,7 +40,7 @@ export const getClient = async (tenant: TenantEnum) => {
             .then((response) => response.data);
 
         await collection
-            .doc(tenant)
+            .doc(tenantId)
             .set({ ...accessToken, expires_at: add(new Date(), { seconds: accessToken.expires_in }) });
 
         return accessToken.access_token;
@@ -55,7 +53,7 @@ export const getClient = async (tenant: TenantEnum) => {
         headers: {
             Authorization: `Bearer ${accessToken}`,
             apikey: process.env.WORKWAVE_API_KEY,
-            'tenant-id': tenant,
+            'tenant-id': tenantId,
         },
     });
 };
