@@ -16,4 +16,5 @@ export const WebhookRequestBodySchema = Joi.object<WebhookRequestBody>({
     EntityType: Joi.string(),
     EntityId: Joi.number(),
     Url: Joi.string(),
+    TenantId: Joi.string(),
 });
