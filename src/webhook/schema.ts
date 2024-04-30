@@ -24,7 +24,7 @@ abstract class BaseField implements Field {
     get validationSchema() {
         return {
             [this.name]: this.array
-                ? Joi.array().items(this.fieldType.validationSchema)
+                ? Joi.array().items(this.fieldType.validationSchema).sparse(true)
                 : this.fieldType.validationSchema,
         };
     }
