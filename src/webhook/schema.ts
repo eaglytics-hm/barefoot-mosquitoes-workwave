@@ -1,7 +1,9 @@
 import JoiDefault, { Schema } from 'joi';
 import { TableField } from '@google-cloud/bigquery';
 
-export const Joi = JoiDefault.defaults((schema) => schema.empty('').allow(null).options({ abortEarly: false }));
+export const Joi = JoiDefault.defaults((schema) => {
+    return schema.allow('').allow(null).options({ abortEarly: false });
+});
 
 type FieldType = { validationSchema: Schema; tableSchema: string };
 
@@ -24,7 +26,7 @@ abstract class BaseField implements Field {
     get validationSchema() {
         return {
             [this.name]: this.array
-                ? Joi.array().items(this.fieldType.validationSchema).sparse(true)
+                ? Joi.array().items(this.fieldType.validationSchema).default([])
                 : this.fieldType.validationSchema,
         };
     }
@@ -86,7 +88,7 @@ export class RecordField implements Field {
     get validationSchema() {
         const recordSchema = Joi.object(Object.assign({}, ...this.fields.map((field) => field.validationSchema)));
         return {
-            [this.name]: this.array ? Joi.array().items(recordSchema) : recordSchema,
+            [this.name]: this.array ? Joi.array().items(recordSchema).sparse(true) : recordSchema,
         };
     }
     get tableSchema() {
