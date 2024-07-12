@@ -201,6 +201,7 @@ export const Invoice = createWebhookModel({
                     new StringField('Service'),
                     new StringField('ServiceDescription'),
                     new BooleanField('Committed'),
+                    new BooleanField('FinanceID'),
                     new StringField('PaymentType'),
                     new StringField('AdjustmentReason'),
                     new Int64Field('RelatedPaymentID'),
