@@ -40,9 +40,10 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
     const service = async ({ TenantId: tenantId, EntityId: entityId, EntityType: entityType }: WebhookRequestBody) => {
         const client = await getClient(tenantId);
         const file = bucket.file(storageConfig.path(tenantId, entityId));
+        const validationOptions = { stripUnknown: false, allowUnknown: true };
         const record = await client
             .request(resolver(entityId))
-            .then((response) => validationSchema.validateAsync(response.data));
+            .then((response) => validationSchema.validateAsync(response.data, validationOptions));
         await file.save(JSON.stringify(record), { resumable: false });
         logger.info(`Tenant ID ${tenantId}: ${entityType} ${entityId} saved to ${file.name}`);
         return file.name;
