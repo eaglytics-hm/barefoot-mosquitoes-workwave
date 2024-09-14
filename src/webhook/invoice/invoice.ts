@@ -1,7 +1,5 @@
-import Joi from 'joi';
-
-import { BooleanField, Int64Field, NumericField, RecordField, StringField, DateTimeField } from '../schema';
-import { createWebhookModel } from '../webhook.interface';
+import { Joi, BooleanField, Int64Field, NumericField, StringField, DateTimeField } from '../schema';
+import { createWebhookModel } from '../webhook.model';
 
 const PdfUrlFields = {
     AdditionalProp1: StringField,
@@ -49,8 +47,8 @@ const ApplicationFields = {
     RelatedPaymentID: Int64Field,
 };
 
-export const InvoiceCreditMemo = createWebhookModel({
-    name: 'Invoice',
+export const Invoice = createWebhookModel({
+    name: 'Invoice2',
     resolver: (id) => ({ method: 'GET', url: `invoices/${id}` }),
     schema: Joi.object({
         InvoiceID: Int64Field,
@@ -88,7 +86,7 @@ export const InvoiceCreditMemo = createWebhookModel({
         TaxRate: NumericField,
         SubTotal: NumericField,
         Tax: NumericField,
-        TaxDetails: Joi.array().has(TaxDetailsFields),
+        TaxDetails: Joi.array().items(TaxDetailsFields).sparse(true),
         Total: NumericField,
         Balance: NumericField,
         Cost: NumericField,
@@ -125,7 +123,7 @@ export const InvoiceCreditMemo = createWebhookModel({
         NotServicedReason: StringField,
         ConsolidatedInvoiceNum: StringField,
         ConsolidatedInvoiceDate: DateTimeField,
-        LineItems: Joi.array().has({
+        LineItems: Joi.array().items({
             ServiceCode: StringField,
             Description: StringField,
             Cost: NumericField,
@@ -134,8 +132,8 @@ export const InvoiceCreditMemo = createWebhookModel({
             ExtendedPrice: NumericField,
             Taxable: BooleanField,
             GLCode: StringField,
-        }),
-        MaterialApplications: Joi.array().has({
+        }).sparse(),
+        MaterialApplications: Joi.array().items({
             MaterialApplicationID: Int64Field,
             OrderID: Int64Field,
             OrderNum: Int64Field,
@@ -170,12 +168,12 @@ export const InvoiceCreditMemo = createWebhookModel({
             Device: StringField,
             WorkDate: DateTimeField,
             DateApplied: DateTimeField,
-            AreasApplied: Joi.array().has(StringField),
-            TargetPests: Joi.array().has(StringField),
-            TargetPestDescriptions: Joi.array().has(StringField),
-        }),
-        TargetPests: Joi.array().has(StringField),
-        Technicians: Joi.array().has({
+            AreasApplied: Joi.array().items(StringField).sparse(true),
+            TargetPests: Joi.array().items(StringField).sparse(true),
+            TargetPestDescriptions: Joi.array().items(StringField).sparse(true),
+        }).sparse(true),
+        TargetPests: Joi.array().items(StringField).sparse(true),
+        Technicians: Joi.array().items({
             Position: Int64Field,
             TechID: Int64Field,
             Code: StringField,
@@ -187,10 +185,10 @@ export const InvoiceCreditMemo = createWebhookModel({
             NoCommission: BooleanField,
             SignatureFilename: StringField,
             Username: StringField,
-        }),
-        UserDefinedFields: Joi.array().has(UserDefinedFields),
+        }).sparse(true),
+        UserDefinedFields: Joi.array().items(UserDefinedFields).sparse(true),
         PdfUrls: PdfUrlFields,
-        Applications: Joi.array().has({
+        Applications: Joi.array().items({
             ApplyFromType: StringField,
             ApplyFromID: Int64Field,
             Amount: NumericField,
@@ -210,7 +208,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 Description: StringField,
                 SubTotal: NumericField,
                 Tax: NumericField,
-                TaxDetails: Joi.array().has(TaxDetailsFields),
+                TaxDetails: Joi.array().items(TaxDetailsFields).sparse(true),
                 Total: NumericField,
                 Balance: NumericField,
                 InvoiceDate: DateTimeField,
@@ -255,7 +253,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 Description: StringField,
                 SubTotal: NumericField,
                 Tax: NumericField,
-                TaxDetails: Joi.array().has(TaxDetailsFields),
+                TaxDetails: Joi.array().items(TaxDetailsFields).sparse(true),
                 Total: NumericField,
                 WorkDate: DateTimeField,
                 TimeRange: StringField,
@@ -267,7 +265,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 TechID1: Int64Field,
                 Route: StringField,
                 PdfUrls: PdfUrlFields,
-                UserDefinedFields: Joi.array().has(UserDefinedFields),
+                UserDefinedFields: Joi.array().items(UserDefinedFields).sparse(true),
                 BundleName: StringField,
                 DiscountCode: StringField,
                 LocationBundleID: Int64Field,
@@ -275,8 +273,8 @@ export const InvoiceCreditMemo = createWebhookModel({
                 ExternalIdentifier: StringField,
             },
             ReversePayment: ApplicationFields,
-        }),
-        AppliedTo: Joi.array().has({
+        }).sparse(true),
+        AppliedTo: Joi.array().items({
             ApplyToType: StringField,
             ApplyToID: Int64Field,
             Amount: NumericField,
@@ -297,7 +295,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 Description: StringField,
                 SubTotal: NumericField,
                 Tax: NumericField,
-                TaxDetails: Joi.array().has(TaxDetailsFields),
+                TaxDetails: Joi.array().items(TaxDetailsFields).sparse(true),
                 Total: NumericField,
                 Balance: NumericField,
                 InvoiceDate: DateTimeField,
@@ -342,7 +340,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 Description: StringField,
                 SubTotal: NumericField,
                 Tax: NumericField,
-                TaxDetails: Joi.array().has(TaxDetailsFields),
+                TaxDetails: Joi.array().items(TaxDetailsFields).sparse(true),
                 Total: NumericField,
                 WorkDate: DateTimeField,
                 TimeRange: StringField,
@@ -354,7 +352,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 TechID1: Int64Field,
                 Route: StringField,
                 PdfUrls: PdfUrlFields,
-                UserDefinedFields: Joi.array().has(UserDefinedFields),
+                UserDefinedFields: Joi.array().items(UserDefinedFields).sparse(true),
                 BundleName: StringField,
                 DiscountCode: StringField,
                 LocationBundleID: Int64Field,
@@ -411,7 +409,7 @@ export const InvoiceCreditMemo = createWebhookModel({
                 AdvanceSAD: BooleanField,
                 AsfSetupIDs: StringField,
             },
-        }),
+        }).sparse(true),
         BundleName: StringField,
         DiscountCode: StringField,
         OpportunityId: Int64Field,

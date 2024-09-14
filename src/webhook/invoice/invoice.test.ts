@@ -1,16 +1,17 @@
-import { InvoiceCreditMemo } from './invoice';
+import { Invoice } from './invoice';
 
 it('service', async () => {
-    const { service } = InvoiceCreditMemo;
     try {
-        const [fileSave, writeRow] = await service({
+        const [fileSave, writeRow] = await Invoice.service({
             TenantId: '338802',
             EntityId: 766971,
             EntityType: 'Invoice',
             Url: '',
         });
-        console.log(fileSave);
         expect(fileSave).toBeDefined();
+        expect(writeRow).toBeDefined();
+        console.log(fileSave);
+        console.log(writeRow);
     } catch (error) {
         console.error(error);
         throw error;

@@ -6,6 +6,7 @@ import { BigQuery } from '@google-cloud/bigquery';
 import Joi from 'joi';
 
 import { getLogger } from '../logging.service';
+import { streamWrite } from '../bigquery-storage.service';
 import { getClient } from '../workwave/auth.service';
 import { validator } from '../validator';
 import { WebhookRequest, WebhookRequestBody, WebhookRequestBodySchema } from './webhook.request.dto';
@@ -27,7 +28,7 @@ type CreateWebhookModelConfig = {
 export const createWebhookModel = ({ name, resolver, schema }: CreateWebhookModelConfig) => {
     const service = async ({ TenantId: tenantId, EntityId: entityId, EntityType: entityType }: WebhookRequestBody) => {
         const client = await getClient(tenantId);
-        const record = await client.request(resolver(entityId));
+        const record = await client.request(resolver(entityId)).then((response) => response.data);
 
         const tasks = [];
         const file = bucket.file(`tenant_id=${tenantId}/${name}/${entityId}.json`);
@@ -37,12 +38,17 @@ export const createWebhookModel = ({ name, resolver, schema }: CreateWebhookMode
         });
         tasks.push(fileSave);
 
-        const { error, value } = schema.validate(record, { stripUnknown: false, allowUnknown: true });
+        const { error, value } = schema.validate(record, {
+            abortEarly: false,
+            stripUnknown: false,
+            allowUnknown: true,
+        });
         if (error) {
             return await Promise.all(tasks);
         }
-        const writeRow = Promise.resolve(value).then(() => {
-            logger.info(`Tenant ID ${tenantId}: ${entityType} ${entityId} saved to ${file.name}`);
+        const writeRow = streamWrite([{ ...value, _CHANGE_TYPE: 'UPSERT' }], {
+            datasetId: dataset.id!,
+            tableId: name,
         });
         tasks.push(writeRow);
         return await Promise.all(tasks);
