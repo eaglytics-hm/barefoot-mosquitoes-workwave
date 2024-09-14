@@ -65,7 +65,7 @@ export const createWebhookModel = ({ name, resolver, fields }: CreateWebhookMode
             await dataset.create();
         }
 
-        const table = dataset.table(`${name}`);
+        const table = dataset.table('BACKUP_Invoice');
         const tableName = `${table.dataset.id}.${table.id}`;
 
         if (await table.exists().then(([response]) => response)) {
