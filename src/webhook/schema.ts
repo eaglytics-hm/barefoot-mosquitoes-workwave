@@ -1,9 +1,16 @@
 import JoiDefault, { Schema } from 'joi';
+import { DateTime } from 'luxon';
 import { TableField } from '@google-cloud/bigquery';
 
 export const Joi = JoiDefault.defaults((schema) => {
     return schema.allow('').allow(null).options({ abortEarly: false });
 });
+
+export const BooleanField = JoiDefault.boolean().allow(null);
+export const Int64Field = JoiDefault.number().integer().allow(null);
+export const NumericField = JoiDefault.number().allow(null);
+export const StringField = JoiDefault.string().empty('').allow(null);
+export const DatetimeField = JoiDefault.custom((value) => (value ? value : null));
 
 type FieldType = { validationSchema: Schema; tableSchema: string };
 
