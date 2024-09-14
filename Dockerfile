@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim as builder
+FROM node:20-bookworm-slim AS builder
 
 ENV NODE_ENV build
 
@@ -14,7 +14,7 @@ RUN npm prune --production
 
 # ---
 
-FROM node:20-bookworm-slim
+FROM node:20-bookworm-slim AS production
 
 ENV NODE_ENV production
 
