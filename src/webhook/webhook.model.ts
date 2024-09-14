@@ -1,8 +1,8 @@
 import { NextFunction, Response, Router } from 'express';
 import { ValidatedRequest } from 'express-joi-validation';
 import { AxiosRequestConfig } from 'axios';
-import { Storage } from '@google-cloud/storage';
 import { BigQuery } from '@google-cloud/bigquery';
+import { Storage } from '@google-cloud/storage';
 import Joi from 'joi';
 
 import { getLogger } from '../logging.service';

@@ -16,6 +16,6 @@ export const Int64Field = Joi.number().integer();
 export const NumericField = Joi.number();
 export const StringField = Joi.string().empty('');
 export const DateTimeField = Joi.custom((value) => {
-    const parsed = DateTime.fromISO(value);
+    const parsed = DateTime.fromISO(value, { zone: 'UTC' });
     return parsed.isValid ? parsed.toMillis() * 1000 : null;
 });
