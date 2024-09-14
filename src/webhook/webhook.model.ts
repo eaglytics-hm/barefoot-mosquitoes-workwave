@@ -46,7 +46,7 @@ export const createWebhookModel = ({ name, resolver, schema }: CreateWebhookMode
         if (error) {
             return await Promise.all(tasks);
         }
-        const writeRow = streamWrite([{ ...value, _CHANGE_TYPE: 'UPSERT' }], {
+        const writeRow = streamWrite([{ ...value, tenant_id: tenantId, _CHANGE_TYPE: 'UPSERT' }], {
             datasetId: dataset.id!,
             tableId: name,
         });
