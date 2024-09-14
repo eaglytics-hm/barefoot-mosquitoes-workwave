@@ -1,4 +1,4 @@
-create external table `Workwave.Invoice2`(
+create table `Workwave.Invoice`(
     `InvoiceID` int64,
     `LocationID` int64,
     `BillToID` int64,
@@ -175,6 +175,7 @@ create external table `Workwave.Invoice2`(
             `Service` string,
             `ServiceDescription` string,
             `Committed` bool,
+            `FinanceID` bool,
             `PaymentType` string,
             `AdjustmentReason` string,
             `RelatedPaymentID` int64
@@ -194,6 +195,7 @@ create external table `Workwave.Invoice2`(
             `Service` string,
             `ServiceDescription` string,
             `Committed` bool,
+            `FinanceID` bool,
             `PaymentType` string,
             `AdjustmentReason` string,
             `RelatedPaymentID` int64
@@ -320,6 +322,7 @@ create external table `Workwave.Invoice2`(
             `Service` string,
             `ServiceDescription` string,
             `Committed` bool,
+            `FinanceID` bool,
             `PaymentType` string,
             `AdjustmentReason` string,
             `RelatedPaymentID` int64
