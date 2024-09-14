@@ -48,7 +48,7 @@ const ApplicationFields = {
 };
 
 export const Invoice = createWebhookModel({
-    name: 'Invoice2',
+    name: 'Invoice',
     resolver: (id) => ({ method: 'GET', url: `invoices/${id}` }),
     schema: Joi.object({
         InvoiceID: Int64Field,

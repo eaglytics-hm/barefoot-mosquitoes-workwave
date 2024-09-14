@@ -55,7 +55,7 @@ export const createWebhookModel = ({ name, resolver, schema }: CreateWebhookMode
     };
 
     const router = Router().post(
-        name.toLowerCase(),
+        `/${name.toLowerCase()}`,
         validator.body(WebhookRequestBodySchema),
         ({ body }: ValidatedRequest<WebhookRequest>, res: Response, next: NextFunction) => {
             service(body)
