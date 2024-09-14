@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { add, isAfter } from 'date-fns';
+import { DateTime } from 'luxon';
 import { Timestamp } from '@google-cloud/firestore';
 
 import { AccessToken, tokenCollection } from './token.repository';
@@ -11,7 +11,11 @@ export const getClient = async (tenantId: string) => {
             .get()
             .then((doc) => doc.data() as AccessToken | undefined);
 
-        if (token && token.expires_at instanceof Timestamp && isAfter(token.expires_at.toDate(), new Date())) {
+        if (
+            token &&
+            token.expires_at instanceof Timestamp &&
+            DateTime.fromJSDate(token.expires_at.toDate()) > DateTime.utc()
+        ) {
             return token.access_token;
         }
 
@@ -32,7 +36,7 @@ export const getClient = async (tenantId: string) => {
 
         await tokenCollection
             .doc(tenantId)
-            .set({ ...accessToken, expires_at: add(new Date(), { seconds: accessToken.expires_in }) });
+            .set({ ...accessToken, expires_at: DateTime.utc().plus({ seconds: accessToken.expires_in }).toJSDate() });
 
         return accessToken.access_token;
     };
