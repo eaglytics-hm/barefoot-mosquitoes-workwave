@@ -1,109 +1,21 @@
-import JoiDefault, { Schema } from 'joi';
+import JoiDefault, { ArraySchema } from 'joi';
 import { DateTime } from 'luxon';
-import { TableField } from '@google-cloud/bigquery';
 
 export const Joi = JoiDefault.defaults((schema) => {
-    return schema.allow('').allow(null).options({ abortEarly: false });
+    if (schema.type === 'array') {
+        return (<ArraySchema>schema).allow(null).sparse();
+    }
+    if (schema.type === 'object') {
+        return schema.allow(null);
+    }
+    return schema.allow(null);
 });
 
-export const BooleanField = JoiDefault.boolean().allow(null);
-export const Int64Field = JoiDefault.number().integer().allow(null);
-export const NumericField = JoiDefault.number().allow(null);
-export const StringField = JoiDefault.string().empty('').allow(null);
-export const DatetimeField = JoiDefault.custom((value) => (value ? value : null));
-
-type FieldType = { validationSchema: Schema; tableSchema: string };
-
-export type Field = {
-    validationSchema: { [key: string]: Schema };
-    tableSchema: TableField;
-};
-
-abstract class BaseField implements Field {
-    name: string;
-    fieldType: FieldType;
-    array: boolean;
-
-    constructor(name: string, fieldType: FieldType, array = false) {
-        this.name = name;
-        this.fieldType = fieldType;
-        this.array = array;
-    }
-
-    get validationSchema() {
-        return {
-            [this.name]: this.array
-                ? Joi.array().items(this.fieldType.validationSchema).default([])
-                : this.fieldType.validationSchema,
-        };
-    }
-    get tableSchema() {
-        return { name: this.name, type: this.fieldType.tableSchema, mode: this.array ? 'REPEATED' : 'NULLABLE' };
-    }
-}
-
-export class BooleanField extends BaseField implements Field {
-    constructor(name: string, array = false) {
-        super(name, { validationSchema: Joi.boolean(), tableSchema: 'BOOLEAN' }, array);
-    }
-}
-
-export class StringField extends BaseField implements Field {
-    constructor(name: string, array = false) {
-        super(name, { validationSchema: Joi.string(), tableSchema: 'STRING' }, array);
-    }
-}
-
-export class Int64Field extends BaseField implements Field {
-    constructor(name: string, array = false) {
-        super(name, { validationSchema: Joi.number(), tableSchema: 'INT64' }, array);
-    }
-}
-
-export class NumericField extends BaseField implements Field {
-    constructor(name: string, array = false) {
-        super(name, { validationSchema: Joi.number(), tableSchema: 'NUMERIC' }, array);
-    }
-}
-
-export class DateTimeField extends BaseField implements Field {
-    constructor(name: string, array = false) {
-        super(
-            name,
-            {
-                validationSchema: Joi.custom((value: string | undefined) => {
-                    return value ? value : null;
-                }),
-                tableSchema: 'TIMESTAMP',
-            },
-            array,
-        );
-    }
-}
-
-export class RecordField implements Field {
-    name: string;
-    fields: Field[];
-    array: boolean;
-
-    constructor(name: string, fields: Field[], array = false) {
-        this.name = name;
-        this.fields = fields;
-        this.array = array;
-    }
-
-    get validationSchema() {
-        const recordSchema = Joi.object(Object.assign({}, ...this.fields.map((field) => field.validationSchema)));
-        return {
-            [this.name]: this.array ? Joi.array().items(recordSchema).sparse(true) : recordSchema,
-        };
-    }
-    get tableSchema() {
-        return {
-            name: this.name,
-            type: 'RECORD',
-            mode: this.array ? 'REPEATED' : 'NULLABLE',
-            fields: this.fields.map((field) => field.tableSchema),
-        };
-    }
-}
+export const BooleanField = Joi.boolean();
+export const Int64Field = Joi.number().integer();
+export const NumericField = Joi.number();
+export const StringField = Joi.string().empty('');
+export const DateTimeField = Joi.custom((value) => {
+    const parsed = DateTime.fromISO(value);
+    return parsed.isValid ? parsed.toMillis() * 1000 : null;
+});
