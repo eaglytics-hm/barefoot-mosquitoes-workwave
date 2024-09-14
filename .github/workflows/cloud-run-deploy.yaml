@@ -9,7 +9,7 @@ on:
 concurrency: ${{ github.ref }}-${{ github.workflow }}
 
 env:
-  IMAGE: us-docker.pkg.dev/test001-397012/docker-1/barefoot-mosquitoes-workwave:${{ github.ref_name }}
+  IMAGE_TAG: us-docker.pkg.dev/test001-397012/docker-1/barefoot-mosquitoes-workwave:${{ github.ref_name }}
   SERVICE_NAME: barefoot-mosquitoes-workwave-${{ github.ref_name }}
 
 jobs:
@@ -55,7 +55,7 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}
-          image: ${{ env.IMAGE }}
+          image: ${{ env.IMAGE_TAG }}
           timeout: 30s
           secrets: |
             WORKWAVE_CLIENT_ID=WORKWAVE_CLIENT_ID:latest
