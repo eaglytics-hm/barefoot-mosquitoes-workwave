@@ -20,7 +20,7 @@ app.use(({ method, path, body }, res, next) => {
     next();
 });
 
-Invoice.routes.forEach(({ path, handlers }) => app.post(path, ...handlers));
+app.use(Invoice.router);
 
 app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
     if (isObject(error) && 'error' in error && Joi.isError(error.error)) {
@@ -28,7 +28,6 @@ app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
         res.status(400).json({ error: error.error });
         return;
     }
-
     logger.error({ error });
     res.status(500).json({ error });
 });
