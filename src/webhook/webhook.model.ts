@@ -40,7 +40,7 @@ export const createWebhookModel = ({ name, resolver, schema }: CreateWebhookMode
 
         const { error, value } = schema.validate(record, {
             abortEarly: false,
-            stripUnknown: false,
+            stripUnknown: true,
             allowUnknown: true,
         });
         if (error) {

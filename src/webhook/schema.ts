@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 
 export const Joi = JoiDefault.defaults((schema) => {
     if (schema.type === 'array') {
-        return (<ArraySchema>schema).allow(null).sparse();
+        return (<ArraySchema>schema).allow(null).sparse(false);
     }
     if (schema.type === 'object') {
         return schema.allow(null);

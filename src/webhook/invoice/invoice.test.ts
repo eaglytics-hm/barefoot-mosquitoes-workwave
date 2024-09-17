@@ -4,7 +4,7 @@ it('service', async () => {
     try {
         const [fileSave, writeRow] = await Invoice.service({
             TenantId: '338802',
-            EntityId: 766971,
+            EntityId: 781150,
             EntityType: 'Invoice',
             Url: '',
         });
